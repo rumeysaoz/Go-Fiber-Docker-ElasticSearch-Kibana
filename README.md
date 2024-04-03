@@ -357,6 +357,8 @@ docker build -t go-fiber-task .
 docker run -p 3001:3000 go-fiber-task
 ```
 
+![Image description](https://dev-to-uploads.s3.amazonaws.com/uploads/articles/fpay9m8exnz4e7prw6e5.png)
+
 # Adım 3: ElasticSearch ve Kibana ile Entegrasyon
 
 
@@ -403,9 +405,11 @@ Bu docker-compose.yml dosyası, ElasticSearch ve Kibana için iki servis tanıml
 Aşağıdaki komut ile Docker Compose aracılığıyla tanımlanan servisleri başlatın.
 
 ```
-docker-compose up
+docker-compose up -d
 ```
 Bu komut, ElasticSearch ve Kibana'yı ayağa kaldıracak. ElasticSearch http://localhost:9200 adresinde, Kibana ise http://localhost:5601 adresinde erişilebilir olacak.
+
+![Image description](https://dev-to-uploads.s3.amazonaws.com/uploads/articles/4qmrnlw8j0fcgrswf0m5.png)
 
 # Adım 4: Postman ve ElasticSearch-Kibana ile Test Etme
 
