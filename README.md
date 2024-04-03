@@ -307,31 +307,37 @@ Artık http://localhost:3000 adresine giderek API'nize ulaşabilirsiniz.
 Proje kök dizininde, Dockerfile adında bir dosya oluşturun ve aşağıdaki içeriği ekleyin.
 
 ```bash
-# Golang 1.18 sürümünü kullanarak bir Alpine Linux tabanlı builder imajı oluştur.
-FROM golang:1.18-alpine AS builder
+# Go'nun en son stabil sürümünü kullanarak bir Alpine Linux tabanlı builder imajı oluştur.
+FROM golang:latest AS builder
 
 # /app dizinini çalışma dizini olarak ayarla.
 WORKDIR /app
+
+# Go modül desteğini etkinleştir.
+ENV GO111MODULE=on
 
 # Mevcut dizindeki tüm dosyaları (bu Dockerfile'ın bulunduğu yerdeki) /app dizinine kopyala.
 COPY . .
 
 # Go ile main.go dosyasını derle ve 'main' adında bir çalıştırılabilir dosya oluştur.
-RUN go build -o main .
+# CGO'yu devre dışı bırak ve statik olarak bağla.
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -installsuffix cgo -o main .
 
 # Yeni bir aşama başlat: Hafif bir Alpine Linux tabanlı imaj kullan.
+# Alpine imajına ca-certificates eklemek, HTTPS üzerinden bağlantı kurarken SSL sertifikası doğrulama sorunlarını önler.
 FROM alpine:latest  
+RUN apk --no-cache add ca-certificates
 
-# /root dizinini çalışma dizini olarak ayarla.
-WORKDIR /root/
+# /app dizinini çalışma dizini olarak ayarla.
+WORKDIR /app
 
-# Builder aşamasından elde edilen 'main' çalıştırılabilir dosyasını şu anki aşamaya kopyala.
+# Builder aşamasından elde edilen 'main' çalıştırılabilir dosyasını şu anki aşamaya (/app dizinine) kopyala.
 COPY --from=builder /app/main .
 
 # Konteynerin 3000 numaralı portunu dış dünya ile paylaş.
 EXPOSE 3000
 
-# Konteyner çalıştırıldığında './main' komutunu çalıştır (Bu, Go uygulamanızı başlatır).
+# Konteyner çalıştırıldığında 'main' komutunu çalıştır (Bu, Go uygulamanızı başlatır).
 CMD ["./main"]
 ```
 
@@ -342,9 +348,9 @@ CMD ["./main"]
 docker build -t go-fiber-task .
 
 # Oluşturulan 'go-fiber-task' image'ını bir konteyner olarak başlat.
-# Konteynerin 3000 numaralı portunu, host makinenin 3000 numaralı portuna yönlendir.
+# Konteynerin 3000 numaralı portunu, host makinenin 3001 numaralı portuna yönlendir.
 # Bu sayede, host makineden konteynerde çalışan uygulamaya ulaşılabilir.
-docker run -p 3000:3000 go-fiber-task
+docker run -p 3001:3000 go-fiber-task
 ```
 
 # Adım 3: ElasticSearch ve Kibana ile Entegrasyon
