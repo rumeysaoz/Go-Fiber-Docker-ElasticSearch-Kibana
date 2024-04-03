@@ -311,8 +311,8 @@ Artık http://localhost:3000 adresine giderek API'nize ulaşabilirsiniz.
 Proje kök dizininde, Dockerfile adında bir dosya oluşturun ve aşağıdaki içeriği ekleyin.
 
 ```bash
-# Go'nun en son stabil sürümünü kullanarak bir Alpine Linux tabanlı builder imajı oluştur.
-FROM golang:latest AS builder
+# Golang 1.18 sürümünü kullanarak bir Alpine Linux tabanlı builder imajı oluştur.
+FROM golang:1.18-alpine AS builder
 
 # /app dizinini çalışma dizini olarak ayarla.
 WORKDIR /app
