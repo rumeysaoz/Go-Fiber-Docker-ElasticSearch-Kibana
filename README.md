@@ -66,9 +66,13 @@ go get github.com/elastic/go-elasticsearch/v7
 - Go Dosyalarını Oluşturma:
 
 **Model Katmanı:** Veri modellerini ve yapılarını tanımlar.
+
 **Router Katmanı:** HTTP yönlendirmelerini ve endpoint tanımlarını içerir.
+
 **Handler Katmanı:** HTTP isteklerini işler ve yanıtlarını döndürür.
+
 **Service Katmanı:** İş mantığını içerir.
+
 **Repository Katmanı:** Veritabanı işlemlerini gerçekleştirir.
 
 _**1. Model Katmanı (models/task.go)**_
