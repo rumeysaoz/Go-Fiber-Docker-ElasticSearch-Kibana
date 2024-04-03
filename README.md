@@ -361,6 +361,8 @@ version: '3'
 services:
   # ElasticSearch servisini tanımlar.
   elasticsearch:
+    # "container_name" özelliği, oluşturulan Docker konteyneri için belirli bir isim atamaya olanak tanır.
+    container_name: elasticsearch
     # ElasticSearch için kullanılacak Docker imajı. Burada Elastic.co'nun resmi ElasticSearch 7.9.2 sürümünü kullanıyoruz.
     image: docker.elastic.co/elasticsearch/elasticsearch:7.9.2
     # ElasticSearch'in çalışma şeklini belirleyen çevre değişkenleri. Burada, tek düğüm (node) modunda çalışmasını sağlıyoruz.
@@ -372,6 +374,8 @@ services:
 
   # Kibana servisini tanımlar.
   kibana:
+    # "container_name" özelliği, oluşturulan Docker konteyneri için belirli bir isim atamaya olanak tanır.
+    container_name: kibana
     # Kibana için kullanılacak Docker imajı. Burada yine Elastic.co'nun resmi Kibana 7.9.2 sürümünü kullanıyoruz.
     image: docker.elastic.co/kibana/kibana:7.9.2
     # Kibana'nın bağlı olduğu port. Kibana arayüzüne tarayıcı üzerinden 5601 portu kullanılarak erişilebilir.
