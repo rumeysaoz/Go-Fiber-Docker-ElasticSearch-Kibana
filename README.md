@@ -73,7 +73,7 @@ go get github.com/elastic/go-elasticsearch/v7
 
 _**1. Model Katmanı (models/task.go)**_
 
-```
+```bash
 package models
 
 import "time"
@@ -89,7 +89,7 @@ type Task struct {
 
 _**2. Service Katmanı (services/taskService.go)**_
 
-```
+```bash
 package services
 
 import (
@@ -203,7 +203,7 @@ func DeleteTask(es *elasticsearch.Client, id string) error {
 
 _**3. Handler Katmanı (handlers/taskHandler.go)**_
 
-```
+```bash
 package handlers
 
 import (
@@ -266,7 +266,7 @@ func RegisterTaskRoutes(app *fiber.App, es *elasticsearch.Client) {
 
 _**4. Main Dosyası (main.go)**_
 
-```
+```bash
 package main
 
 import (
@@ -306,7 +306,7 @@ Artık http://localhost:3000 adresine giderek API'nize ulaşabilirsiniz.
 
 Proje kök dizininde, Dockerfile adında bir dosya oluşturun ve aşağıdaki içeriği ekleyin.
 
-```
+```bash
 # Golang 1.18 sürümünü kullanarak bir Alpine Linux tabanlı builder imajı oluştur.
 FROM golang:1.18-alpine AS builder
 
@@ -353,7 +353,7 @@ docker run -p 3000:3000 go-fiber-task
 - docker-compose.yml Dosyası Oluşturma:
 Projeye bir docker-compose.yml dosyası ekleyin ve aşağı içeriği ekleyin. Bu dosya ElasticSearch ve Kibana'yı aynı anda çalıştırmanızı sağlayacak.
 
-```
+```bash
 # Docker Compose dosyasının versiyonunu belirtir. Bu, kullanılan özelliklerin hangi Docker Compose sürümleriyle uyumlu olduğunu gösterir.
 version: '3'
 
