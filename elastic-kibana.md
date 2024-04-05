@@ -293,14 +293,6 @@ func main() {
 }
 ```
 
-- Uygulamayı Çalıştırma:
-
-```
-go run main.go
-```
-
-Terminalde aşağıdaki komutu çalıştırarak uygulamanızı başlatın.
-Artık http://localhost:3000 adresine giderek API'nize ulaşabilirsiniz.
 
 # Adım 2: Docker ile Uygulamayı Konteynerize Etme
 
@@ -316,6 +308,10 @@ FROM golang:1.18-alpine AS builder
 
 # /app dizinini çalışma dizini olarak ayarla.
 WORKDIR /app
+
+# Go mod dosyalarını kopyalayın ve bağımlılıkları indirir
+COPY go.mod go.sum ./
+RUN go mod download
 
 # Go modül desteğini etkinleştir.
 ENV GO111MODULE=on
@@ -345,16 +341,15 @@ EXPOSE 3000
 CMD ["./main"]
 ```
 
-- Docker Image'ını Oluşturma ve Çalıştırma:
+- Docker konteynerlerini oluşturma:
 
 ```
-# 'go-fiber-task' adında bir Docker image'ı oluştur. Bu işlem, yukarıdaki Dockerfile'ı kullanır.
-docker build -t go-fiber-task .
+docker-compose up -- build
+```
+Bu işlem sonrasında bizim için gerekli olan elasticsearch ve kibana konteynerlerini ayağa kaldıracağız. Sonrasında ise uygulamayı çalıştırmak için aşağıdaki terminal kodunu çalıştıracağız:
 
-# Oluşturulan 'go-fiber-task' image'ını bir konteyner olarak başlat.
-# Konteynerin 3000 numaralı portunu, host makinenin 3001 numaralı portuna yönlendir.
-# Bu sayede, host makineden konteynerde çalışan uygulamaya ulaşılabilir.
-docker run -p 3001:3000 go-fiber-task
+```
+go run main.go
 ```
 
 ![Image description](https://dev-to-uploads.s3.amazonaws.com/uploads/articles/fpay9m8exnz4e7prw6e5.png)
