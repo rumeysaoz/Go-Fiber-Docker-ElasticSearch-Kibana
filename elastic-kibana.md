@@ -299,7 +299,6 @@ go run main.go
 ```
 Terminalde aşağıdaki komutu çalıştırarak uygulamanızı başlatın.
 Artık http://localhost:3000 adresine giderek API'nize ulaşabilirsiniz.
-![Image description](https://dev-to-uploads.s3.amazonaws.com/uploads/articles/fpay9m8exnz4e7prw6e5.png)
 
 # Adım 2: Docker ile Uygulamayı Konteynerize Etme
 
