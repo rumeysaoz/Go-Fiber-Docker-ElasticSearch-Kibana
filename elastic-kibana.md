@@ -292,7 +292,14 @@ func main() {
     log.Fatal(app.Listen(":3000"))
 }
 ```
+- Uygulamayı Çalıştırma:
 
+```
+go run main.go
+```
+Terminalde aşağıdaki komutu çalıştırarak uygulamanızı başlatın.
+Artık http://localhost:3000 adresine giderek API'nize ulaşabilirsiniz.
+![Image description](https://dev-to-uploads.s3.amazonaws.com/uploads/articles/fpay9m8exnz4e7prw6e5.png)
 
 # Adım 2: Docker ile Uygulamayı Konteynerize Etme
 
@@ -340,16 +347,16 @@ EXPOSE 3000
 # Konteyner çalıştırıldığında 'main' komutunu çalıştır (Bu, Go uygulamanızı başlatır).
 CMD ["./main"]
 ```
-
-- Docker konteynerlerini oluşturma:
-
-```
-docker-compose up -- build
-```
-Bu işlem sonrasında bizim için gerekli olan elasticsearch ve kibana konteynerlerini ayağa kaldıracağız. Sonrasında ise uygulamayı çalıştırmak için aşağıdaki terminal kodunu çalıştıracağız:
+- Docker Image'ını Oluşturma ve Çalıştırma:
 
 ```
-go run main.go
+# 'go-fiber-task' adında bir Docker image'ı oluştur. Bu işlem, yukarıdaki Dockerfile'ı kullanır.
+docker build -t go-fiber-task .
+
+# Oluşturulan 'go-fiber-task' image'ını bir konteyner olarak başlat.
+# Konteynerin 3000 numaralı portunu, host makinenin 3001 numaralı portuna yönlendir.
+# Bu sayede, host makineden konteynerde çalışan uygulamaya ulaşılabilir.
+docker run -p 3001:3000 go-fiber-task
 ```
 
 ![Image description](https://dev-to-uploads.s3.amazonaws.com/uploads/articles/fpay9m8exnz4e7prw6e5.png)
