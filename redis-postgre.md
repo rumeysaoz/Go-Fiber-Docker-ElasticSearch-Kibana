@@ -232,7 +232,7 @@ volumes:
 # Docker konteynerlerini oluşturma:
 
 ```
-docker-compose up -- build
+docker-compose up --build
 ```
 Bu işlem sonrasında bizim için gerekli olan redis ve postgre konteynerlerini ayağa kaldıracağız. Sonrasında ise uygulamayı çalıştırmak için aşağıdaki terminal kodunu çalıştıracağız:
 
