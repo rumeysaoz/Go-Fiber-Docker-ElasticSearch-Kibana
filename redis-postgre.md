@@ -42,68 +42,135 @@ echo $GOPATH
 
 Bu komutlar, sırasıyla Go'nun sürümünü, GOROOT ve GOPATH değerlerini göstermelidir.
 
-#Go Uygulaması oluşturma:
+#Modüler bir şekilde Go Uygulaması oluşturma:
 ```
 mkdir task && cd task
 go mod init task
 go get github.com/gofiber/fiber/v2
 go get github.com/go-redis/redis/v8
 go get github.com/jackc/pgx/v4
+mkdir database
+mkdir handlers
+mkdir models
 ```
-# main.go dosyası oluşturma:
-nano main.go
+#models.go dosyası oluşturma:
 ```
-package main
+cd models
+nano models.go
+```
 
-import (
-	"context"
-	"encoding/json"
-	"fmt"
-	"github.com/gofiber/fiber/v2"
-	"github.com/go-redis/redis/v8"
-	"github.com/jackc/pgx/v4"
-	"os"
-	"time"
-)
-
-// Task modeli
+```
 type Task struct {
-	ID          int64     `json:"id"`
-	Header      string    `json:"header"`
-	Description string    `json:"description"`
+	ID           int64     `json:"id"`
+	Header       string    `json:"header"`
+	Description  string    `json:"description"`
 	CreationTime time.Time `json:"creation_time"`
 }
 
-var pgConn *pgx.Conn
-var redisClient *redis.Client
+```
+-Tekrar task klasör dizinine geliyoruz.
 
-func initPostgres() {
+```
+cd ..
+```
+#database.go dosyası oluşturma:
+
+```
+cd database
+nano database.go
+```
+
+```
+package database
+
+import (
+	"context"
+	"fmt"
+	"log"
+
+	"github.com/go-redis/redis/v8"
+	"github.com/jackc/pgx/v4"
+)
+
+var PgConn *pgx.Conn
+var RedisClient *redis.Client
+
+func InitPostgres() {
 	var err error
-	pgConn, err = pgx.Connect(context.Background(), "postgres://your_username:your_password@localhost:5432/taskdb")
+	PgConn, err = pgx.Connect(context.Background(), "postgres://postgres:postgres@localhost:5432/taskdb")
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Unable to connect to PostgreSQL: %v\n", err)
-		os.Exit(1)
+		log.Fatalf("Unable to connect to PostgreSQL: %v", err)
 	}
 	fmt.Println("Connected to PostgreSQL")
+
+	// Tasks tablosunu oluştur
+	_, err = PgConn.Exec(context.Background(), `
+		CREATE TABLE IF NOT EXISTS tasks (
+			id SERIAL PRIMARY KEY,
+			header VARCHAR(255) NOT NULL,
+			description TEXT,
+			creation_time TIMESTAMP NOT NULL
+		)
+	`)
+	if err != nil {
+		log.Fatalf("Unable to create tasks table: %v", err)
+	}
+	fmt.Println("Tasks table created")
 }
 
-func initRedis() {
-	redisClient = redis.NewClient(&redis.Options{
+func InitRedis() {
+	RedisClient = redis.NewClient(&redis.Options{
 		Addr:     "localhost:6379",
 		Password: "", // no password set
 		DB:       0,  // use default DB
 	})
 
-	_, err := redisClient.Ping(context.Background()).Result()
+	_, err := RedisClient.Ping(context.Background()).Result()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Unable to connect to Redis: %v\n", err)
-		os.Exit(1)
+		log.Fatalf("Unable to connect to Redis: %v", err)
 	}
 	fmt.Println("Connected to Redis")
 }
 
+
+```
+-Tekrar task klasör dizinine geliyoruz.
+
+```
+cd ..
+```
+#handlers.go dosyası oluşturma:
+
+```
+cd handlers
+nano handlers.go
+```
+
+```
+package handlers
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"time"
+
+	"task/database"
+	"task/models"
+
+	"github.com/gofiber/fiber/v2"
+)
+
+func RegisterRoutes(app *fiber.App) {
+	app.Post("/task", createTask)
+	app.Get("/task/:id", getTask)
+	app.Put("/task/:id", updateTask)
+	app.Delete("/task/:id", deleteTask)
+	app.Get("/redis/keys", listRedisKeys)
+}
+
 func createTask(c *fiber.Ctx) error {
-	task := new(Task)
+	task := new(models.Task)
 
 	if err := c.BodyParser(task); err != nil {
 		return c.Status(400).SendString(err.Error())
@@ -111,7 +178,7 @@ func createTask(c *fiber.Ctx) error {
 
 	task.CreationTime = time.Now()
 
-	_, err := pgConn.Exec(context.Background(), "INSERT INTO tasks (header, description, creation_time) VALUES ($1, $2, $3)", task.Header, task.Description, task.CreationTime)
+	_, err := database.PgConn.Exec(context.Background(), "INSERT INTO tasks (header, description, creation_time) VALUES ($1, $2, $3)", task.Header, task.Description, task.CreationTime)
 	if err != nil {
 		return c.Status(500).SendString(err.Error())
 	}
@@ -120,52 +187,102 @@ func createTask(c *fiber.Ctx) error {
 }
 
 func getTask(c *fiber.Ctx) error {
-    id := c.Params("id")
-    ctx := context.Background()
+	id := c.Params("id")
+	ctx := context.Background()
 
-    // Öncelikle Redis'te arayalım
-    val, err := redisClient.Get(ctx, id).Result()
-    if err == nil {
-        // Cache'te bulundu
-        task := new(Task)
-        if err := json.Unmarshal([]byte(val), task); err != nil {
-            return c.Status(500).SendString(err.Error())
-        }
-        return c.JSON(task)
-    }
+	// Öncelikle Redis'te arayalım
+	val, err := database.RedisClient.Get(ctx, id).Result()
+	if err == nil {
+		// Cache'te bulundu
+		task := new(models.Task)
+		if err := json.Unmarshal([]byte(val), task); err != nil {
+			return c.Status(500).SendString(err.Error())
+		}
+		return c.JSON(task)
+	}
 
-    // Redis'te bulunamazsa, PostgreSQL'den arayalım
-    task := new(Task)
-    err = pgConn.QueryRow(ctx, "SELECT id, header, description, creation_time FROM tasks WHERE id = $1", id).Scan(&task.ID, &task.Header, &task.Description, &task.CreationTime)
-    if err != nil {
-        return c.Status(404).SendString("Task not found")
-    }
+	// Redis'te bulunamazsa, PostgreSQL'den arayalım
+	task := new(models.Task)
+	err = database.PgConn.QueryRow(ctx, "SELECT id, header, description, creation_time FROM tasks WHERE id = $1", id).Scan(&task.ID, &task.Header, &task.Description, &task.CreationTime)
+	if err != nil {
+		return c.Status(404).SendString("Task not found")
+	}
 
-    // Sonucu Redis'e kaydedelim
-    jsonData, err := json.Marshal(task)
-    if err != nil {
-        return c.Status(500).SendString(err.Error())
-    }
-    redisClient.Set(ctx, fmt.Sprintf("%d", task.ID), string(jsonData), 30*time.Minute) // 30 dakika boyunca cache'le
+	// Sonucu Redis'e kaydedelim
+	jsonData, err := json.Marshal(task)
+	if err != nil {
+		return c.Status(500).SendString(err.Error())
+	}
+	database.RedisClient.Set(ctx, fmt.Sprintf("%d", task.ID), string(jsonData), 30*time.Minute) // 30 dakika boyunca cache'le
 
-    return c.JSON(task) // Fonksiyonun sonunda başarıyla Task'ı JSON olarak döndür
+	return c.JSON(task) // Fonksiyonun sonunda başarıyla Task'ı JSON olarak döndür
 }
 
-func main() {
-	initPostgres()
-	initRedis()
+func updateTask(c *fiber.Ctx) error {
+	id := c.Params("id")
+	task := new(models.Task)
 
-	app := fiber.New()
+	if err := c.BodyParser(task); err != nil {
+		return c.Status(400).SendString(err.Error())
+	}
 
-	app.Post("/task", createTask)
-	app.Get("/task/:id", getTask)
+	// Veritabanında güncelleme işlemi yapılacak
+	ctx := context.Background()
+	_, err := database.PgConn.Exec(ctx, "UPDATE tasks SET header = $1, description = $2 WHERE id = $3", task.Header, task.Description, id)
+	if err != nil {
+		return c.Status(500).SendString(err.Error())
+	}
 
-	app.Listen(":3000")
+	// Güncelleme başarılı oldu, HTTP 200 OK dön
+	return c.SendStatus(fiber.StatusOK)
 }
 
+func deleteTask(c *fiber.Ctx) error {
+	id := c.Params("id")
+
+	// Veritabanında silme işlemi yapılacak
+	ctx := context.Background()
+	_, err := database.PgConn.Exec(ctx, "DELETE FROM tasks WHERE id = $1", id)
+	if err != nil {
+		return c.Status(500).SendString(err.Error())
+	}
+
+	// Silme başarılı oldu, HTTP 200 OK dön
+	return c.SendStatus(fiber.StatusOK)
+}
+
+func listRedisKeys(c *fiber.Ctx) error {
+	ctx := context.Background()
+
+	// Tüm anahtarları al
+	keys, err := database.RedisClient.Keys(ctx, "*").Result()
+	if err != nil {
+		return c.Status(500).SendString(err.Error())
+	}
+
+	// Anahtarlarla ilişkili değerleri al
+	var results []map[string]interface{}
+	for _, key := range keys {
+		val, err := database.RedisClient.Get(ctx, key).Result()
+		if err != nil {
+			return c.Status(500).SendString(err.Error())
+		}
+		data := make(map[string]interface{})
+		data[key] = val
+		results = append(results, data)
+	}
+
+	return c.JSON(results)
+}
 
 ```
-# Dockerfile oluşturma:
+#Tüm bağımlılıkları proje içerisinde uygulamak için aşağıdaki go komutunu kullanıyoruz. Ve otomatik olarak go.sum dosyasını oluşturuyoruz.
+
+```
+go mod tidy 
+```
+
+#Dockerfile oluşturma:
 nano Dockerfile
 ```
 # Go'nun resmi base image'ını kullanarak başlayın
@@ -199,7 +316,7 @@ EXPOSE 3000
 # Uygulamayı çalıştırın
 CMD ["./main"]
 ```
-# Docker ile Uygulamayı Konteynerize Etme
+#Docker ile Uygulamayı Konteynerize Etme
 
 **_!!_** Docker ve Docker-Compose kurulu olmalıdır. [Şu link](https://dev.to/aciklab/docker-ve-docker-compose-kurulumu-ubuntu-2004-3ch7) ile kurulum gerçekleştirilebilir.
 **-docker-compose.yml dosyası oluşturma:**
@@ -229,7 +346,7 @@ volumes:
   postgres_data:
 
 ```
-# Docker konteynerlerini oluşturma:
+#Docker konteynerlerini oluşturma:
 
 ```
 docker-compose up --build
@@ -239,7 +356,7 @@ Bu işlem sonrasında bizim için gerekli olan redis ve postgre konteynerlerini 
 ```
 go run main.go
 ```
-# Şimdi sıra ayağa kaldırdığımız uygulamanın test işlemleri için gerekli Postman sorgularını kullanmaya geldi.
+#Şimdi sıra ayağa kaldırdığımız uygulamanın test işlemleri için gerekli Postman sorgularını kullanmaya geldi.
 
 **Postman ile Test Etme:**
 
@@ -283,4 +400,5 @@ Bu istek, yeni bir **Task** ekler PostgreSql'e kaydeder.
 
 - Method: get
 - URL: http://localhost:3000/redis/key
+
 
