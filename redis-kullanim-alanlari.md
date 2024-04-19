@@ -614,7 +614,7 @@ redis-cli HGET user:user123 email
 
 **handlers/handlers.go:**
 
-```
+```bash
 package handlers
 
 import (
