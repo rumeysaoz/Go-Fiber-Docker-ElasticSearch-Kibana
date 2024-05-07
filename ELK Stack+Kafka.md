@@ -1,6 +1,4 @@
 # Filebeat, Kafka, Logstash, Elasticsearch ve Kibana Entegrasyonu
-Add up to 4 tagsMaximum 4 selections
-Selected items:
 
 
 ![Image description](https://dev-to-uploads.s3.amazonaws.com/uploads/articles/2nezsds8ewwazt74gh8v.png)
