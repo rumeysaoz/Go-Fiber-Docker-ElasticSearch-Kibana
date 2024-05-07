@@ -19,7 +19,6 @@ git clone https://github.com/eunsour/docker-efk.git
 
 ```
 cd docker-efk
-
 ```
 **Adım 2: Docker-Compose ile EFK Stack'i Başlatma**
 
